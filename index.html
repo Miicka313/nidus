@@ -1109,12 +1109,16 @@ let allListings = [];
 // ============================================
 // INIT
 // ============================================
+async function withTimeout(promise, ms = 5000) {
+  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
+}
+
 async function init() {
   // Hide loader IMMEDIATELY - no blocking
   document.getElementById('loadingOverlay').classList.add('hidden');
-  try { const { data: { session } } = await sb.auth.getSession(); if (session) { currentUser = session.user; await loadProfile(); } } catch(e) {}
-  try { await loadCategories(); populateCategorySelects(); } catch(e) {}
-  try { await loadHomeListings(); } catch(e) {}
+  try { const { data: { session } } = await withTimeout(sb.auth.getSession()); if (session) { currentUser = session.user; await withTimeout(loadProfile()); } } catch(e) { console.warn('Auth init:', e.message); }
+  try { await withTimeout(loadCategories()); populateCategorySelects(); } catch(e) { console.warn('Categories:', e.message); }
+  try { await withTimeout(loadHomeListings()); } catch(e) { console.warn('Listings:', e.message); }
   try { animateStats(); } catch(e) {}
   try { setupReveal(); } catch(e) {}
   sb.auth.onAuthStateChange(async (event, session) => {
@@ -4220,11 +4224,36 @@ function showLegal(type) {
   document.body.style.overflow = 'hidden';
 }
 
+// THEME
+function initTheme() {
+  const saved = localStorage.getItem('nidus_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('nidus_theme', next);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
 // INIT
 initTheme();
 showInitLoader();
+
+// Timeout de sécurité : force la disparition du loader après 6 secondes
+const loaderTimeout = setTimeout(() => hideInitLoader(), 6000);
+
 (async () => {
-  await init();
+  try {
+    await init();
+  } catch(e) {
+    console.error('Init error:', e);
+  }
+  clearTimeout(loaderTimeout);
   hideInitLoader();
   checkStripeReturn();
   checkExpiredListings();
