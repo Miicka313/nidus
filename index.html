@@ -24,7 +24,7 @@
     ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
     /* NOISE */
-    body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:1;opacity:.5}
+    body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.5}
 
     /* PAGES */
     .page{display:none;min-height:100vh}
@@ -124,7 +124,7 @@
     .step-dot.done{background:var(--accent);opacity:.4}
 
     /* BOTTOM NAV MOBILE */
-    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:600;background:rgba(10,10,10,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-around;align-items:center}
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:550;background:rgba(10,10,10,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-around;align-items:center}
     .bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 12px;cursor:pointer;color:var(--muted);transition:color .2s;position:relative;min-width:56px}
     .bn-item.active{color:var(--accent)}
     .bn-item svg,.bn-item .bn-icon{font-size:1.3rem;line-height:1}
@@ -135,9 +135,6 @@
       .page.active{padding-bottom:80px}
       nav .nav-links{display:none}
       nav{padding:12px 16px}
-      #heroMap{min-height:auto!important;padding:80px 16px 24px!important}
-      .hero{min-height:auto!important;padding:80px 16px 40px!important}
-      #page-home .section{padding:24px 16px!important}
     }
     body.posting-mode .nav-links,
     body.posting-mode .bottom-nav,
@@ -434,7 +431,7 @@
 <div class="page active" id="page-home">
 
   <!-- HERO : CARTE EN PREMIER -->
-  <section id="heroMap" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:90px 16px 40px;position:relative;overflow:hidden">
+  <section id="heroMap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:90px 16px 40px;position:relative;overflow:hidden">
     <div class="hero-bg"></div>
 
     <!-- Titre -->
@@ -4441,20 +4438,28 @@ function resetSEO() {
 // LOADER INITIAL
 // ============================================
 function showInitLoader() {
-  const overlay = document.getElementById('loadingOverlay');
-  if (overlay) overlay.classList.remove('hidden');
+  const loader = document.createElement('div');
+  loader.id = 'initLoader';
+  loader.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s';
+  loader.innerHTML = '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:2rem;letter-spacing:-1px;color:#f0f0f0">Nid<span style="color:#e8ff47">us</span></div><div style="margin-top:16px;width:40px;height:3px;background:#2c2c2c;border-radius:2px;overflow:hidden"><div id="loaderBar" style="height:100%;background:#e8ff47;width:0%;transition:width .3s;border-radius:2px"></div></div>';
+  document.body.appendChild(loader);
+  // Animation
+  setTimeout(() => { const b = document.getElementById('loaderBar'); if(b) b.style.width='60%'; }, 100);
+  setTimeout(() => { const b = document.getElementById('loaderBar'); if(b) b.style.width='90%'; }, 500);
 }
 
 function hideInitLoader() {
-  const overlay = document.getElementById('loadingOverlay');
-  if (overlay) {
+  setTimeout(() => {
     const b = document.getElementById('loaderBar');
-    if(b) { b.style.width='100%'; }
-    setTimeout(() => overlay.classList.add('hidden'), 300);
-  }
-  // Aussi cacher l'ancien initLoader si présent
-  const old = document.getElementById('initLoader');
-  if (old) { old.style.opacity='0'; setTimeout(()=>old.remove(),400); }
+    if(b) b.style.width='100%';
+    setTimeout(() => {
+      const loader = document.getElementById('initLoader');
+      if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.remove(), 400);
+      }
+    }, 200);
+  }, 100);
 }
 
 // ============================================
@@ -4588,7 +4593,7 @@ initTheme();
 showInitLoader();
 
 // Timeout de sécurité : force la disparition du loader après 6 secondes
-const loaderTimeout = setTimeout(() => hideInitLoader(), 4000);
+const loaderTimeout = setTimeout(() => hideInitLoader(), 6000);
 
 (async () => {
   try {
