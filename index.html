@@ -123,7 +123,19 @@
     .step-dot.active{background:var(--accent);width:24px;border-radius:4px}
     .step-dot.done{background:var(--accent);opacity:.4}
 
-    /* POSTING MODE - bloquer nav */
+    /* BOTTOM NAV MOBILE */
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:600;background:rgba(10,10,10,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-around;align-items:center}
+    .bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 12px;cursor:pointer;color:var(--muted);transition:color .2s;position:relative;min-width:56px}
+    .bn-item.active{color:var(--accent)}
+    .bn-item svg,.bn-item .bn-icon{font-size:1.3rem;line-height:1}
+    .bn-item span{font-size:.6rem;font-weight:600;font-family:'Syne',sans-serif;letter-spacing:.2px}
+    .bn-badge{position:absolute;top:2px;right:8px;background:var(--error);color:#fff;font-size:.55rem;font-weight:800;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;display:none}
+    @media(max-width:768px){
+      .bottom-nav{display:flex}
+      body{padding-bottom:70px}
+      nav .nav-links{display:none}
+      nav{padding:12px 16px}
+    }
     body.posting-mode .nav-links,
     body.posting-mode .bottom-nav,
     body.posting-mode #heroMap,
@@ -530,7 +542,25 @@
 <!-- ================================ PAGE LISTINGS ================================ -->
 <div class="page" id="page-listings">
   <div style="padding-top:80px">
-    <div class="container" style="padding-top:32px">
+    <div class="container" style="padding-top:24px">
+      <!-- BARRE RECHERCHE RAPIDE -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div style="flex:1;display:flex;background:var(--surface);border:1px solid var(--border);border-radius:100px;overflow:hidden;padding:4px 4px 4px 16px;transition:border-color .2s" onfocusin="this.style.borderColor='var(--accent)'" onfocusout="this.style.borderColor='var(--border)'">
+          <input type="text" id="listingsSearchInput" placeholder="🔍 Rechercher..." style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem"
+            oninput="triggerListingsSearch(this.value)"
+            onkeydown="if(event.key==='Enter'){triggerListingsSearch(this.value)}"/>
+          <button onclick="triggerListingsSearch(document.getElementById('listingsSearchInput').value)" style="background:var(--accent);color:#0a0a0a;border:none;border-radius:100px;padding:7px 16px;font-weight:700;font-size:.82rem;cursor:pointer">OK</button>
+        </div>
+      </div>
+
+      <!-- BOUTON RETOUR CATÉGORIE -->
+      <div id="categoryBackBar" style="display:none;align-items:center;gap:10px;margin-bottom:16px;padding:10px 14px;background:var(--surface);border-radius:12px;border:1px solid var(--border)">
+        <button onclick="filterCategory(null)" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0">
+          ← Toutes les catégories
+        </button>
+        <span style="color:var(--border)">|</span>
+        <span id="currentCategoryLabel" style="font-size:.85rem;color:var(--text);font-weight:600"></span>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;width:100%">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -1499,6 +1529,7 @@ async function loadProfile() {
     userFavorites = favs ? favs.map(f => f.listing_id) : [];
   } catch(e) { userFavorites = []; }
   updateNav();
+  updateBottomNavBadges();
 }
 
 function updateNav() {
@@ -2452,6 +2483,12 @@ function filterCategory(catId) {
   const cat = categories.find(c => c.id === catId);
   document.getElementById('listingsPageTitle').textContent = cat ? `${cat.icon} ${cat.name}` : 'Toutes les annonces';
   if (catId && document.getElementById('filterCat')) document.getElementById('filterCat').value = catId;
+  // Afficher/cacher le bouton retour
+  const backBar = document.getElementById('categoryBackBar');
+  const catLabel = document.getElementById('currentCategoryLabel');
+  if (backBar) backBar.style.display = cat ? 'flex' : 'none';
+  if (catLabel && cat) catLabel.textContent = `${cat.icon} ${cat.name}`;
+  showPage('listings');
   loadAllListings(catId);
 }
 
@@ -4567,7 +4604,101 @@ const loaderTimeout = setTimeout(() => hideInitLoader(), 6000);
   initNotifications();
   initPWA();
 })();
+function triggerListingsSearch(val) {
+  clearTimeout(window._searchTimeout);
+  window._searchTimeout = setTimeout(() => {
+    showPage('listings');
+    loadAllListings(null, val && val.trim() ? val.trim() : null);
+    const backBar = document.getElementById('categoryBackBar');
+    if (backBar) backBar.style.display = 'none';
+    if (val && val.trim()) {
+      document.getElementById('listingsPageTitle').textContent = `🔍 "${val.trim()}"`;
+    } else {
+      document.getElementById('listingsPageTitle').textContent = 'Toutes les annonces';
+    }
+  }, 300);
+}
+
+// ============================================
+// BOTTOM NAV
+// ============================================
+function setActiveBottomNav(id) {
+  document.querySelectorAll('.bn-item').forEach(i => i.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function goToFavs() {
+  if (!currentUser) { openModal('authModal'); return; }
+  showPage('profile');
+  setTimeout(() => {
+    const tab = document.querySelector('[onclick*="myFavs"]');
+    if (tab) tab.click();
+  }, 100);
+}
+
+function goToAccount() {
+  if (!currentUser) { openModal('authModal'); return; }
+  showPage('profile');
+}
+
+function updateBottomNavBadges() {
+  // Badge messages
+  const msgBadge = document.getElementById('bnMsgBadge');
+  if (msgBadge) {
+    if (unreadMessages > 0) {
+      msgBadge.textContent = unreadMessages > 9 ? '9+' : unreadMessages;
+      msgBadge.style.display = 'block';
+    } else {
+      msgBadge.style.display = 'none';
+    }
+  }
+  // Badge favoris
+  const favBadge = document.getElementById('bnFavsBadge');
+  if (favBadge && userFavorites.length > 0) {
+    favBadge.textContent = userFavorites.length > 9 ? '9+' : userFavorites.length;
+    favBadge.style.display = 'block';
+    // Cœur plein si favoris
+    const favIcon = document.querySelector('#bn-favs .bn-icon');
+    if (favIcon) favIcon.textContent = '❤️';
+  }
+}
+
+// Sync bottom nav avec la page active
+const _origShowPage = showPage;
+window.showPage = function(name) {
+  _origShowPage(name);
+  const map = { home: null, listings: 'bn-search', messages: 'bn-messages', profile: 'bn-account', 'listing-detail': null };
+  if (map[name]) setActiveBottomNav(map[name]);
+};
+
 loadFranceMap();
 </script>
+<!-- BOTTOM NAV MOBILE -->
+<nav class="bottom-nav" id="bottomNav">
+  <div class="bn-item" id="bn-search" onclick="showPage('listings');setActiveBottomNav('bn-search')">
+    <div class="bn-icon">🔍</div>
+    <span>Rechercher</span>
+  </div>
+  <div class="bn-item" id="bn-favs" onclick="goToFavs();setActiveBottomNav('bn-favs')">
+    <div class="bn-icon">🤍</div>
+    <span>Favoris</span>
+    <div class="bn-badge" id="bnFavsBadge"></div>
+  </div>
+  <div class="bn-item" id="bn-post" onclick="openPostModal()">
+    <div style="background:var(--accent);color:#0a0a0a;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;margin-bottom:2px">+</div>
+    <span style="color:var(--accent)">Publier</span>
+  </div>
+  <div class="bn-item" id="bn-messages" onclick="showPage('messages');setActiveBottomNav('bn-messages')">
+    <div class="bn-icon">💬</div>
+    <span>Messages</span>
+    <div class="bn-badge" id="bnMsgBadge"></div>
+  </div>
+  <div class="bn-item" id="bn-account" onclick="goToAccount();setActiveBottomNav('bn-account')">
+    <div class="bn-icon">👤</div>
+    <span>Mon compte</span>
+  </div>
+</nav>
+
 </body>
 </html>
