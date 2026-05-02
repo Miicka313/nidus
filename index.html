@@ -132,7 +132,7 @@
     .bn-badge{position:absolute;top:2px;right:8px;background:var(--error);color:#fff;font-size:.55rem;font-weight:800;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;display:none}
     @media(max-width:768px){
       .bottom-nav{display:flex}
-      body{padding-bottom:70px}
+      .page.active{padding-bottom:80px}
       nav .nav-links{display:none}
       nav{padding:12px 16px}
     }
@@ -3004,6 +3004,10 @@ function showPage(name) {
   if (name === 'messages') { if (!currentUser) { openModal('authModal'); showPage('home'); return; } loadConversations(); }
   if (name === 'profile') { if (!currentUser) { openModal('authModal'); showPage('home'); return; } loadProfilePage(); }
   if (name === 'admin') { loadAdminDashboard(); }
+  // Sync bottom nav
+  const bnMap = { home: null, listings: 'bn-search', messages: 'bn-messages', profile: 'bn-account' };
+  document.querySelectorAll('.bn-item').forEach(i => i.classList.remove('active'));
+  if (bnMap[name]) { const el = document.getElementById(bnMap[name]); if(el) el.classList.add('active'); }
 }
 
 function switchAdminPanel(id, el) {
@@ -4664,13 +4668,7 @@ function updateBottomNavBadges() {
   }
 }
 
-// Sync bottom nav avec la page active
-const _origShowPage = showPage;
-window.showPage = function(name) {
-  _origShowPage(name);
-  const map = { home: null, listings: 'bn-search', messages: 'bn-messages', profile: 'bn-account', 'listing-detail': null };
-  if (map[name]) setActiveBottomNav(map[name]);
-};
+// Sync bottom nav avec la page active géré directement dans showPage
 
 loadFranceMap();
 </script>
