@@ -1432,7 +1432,7 @@ function populateCategorySelects() {
   const catPickerGrid = document.getElementById('catPickerGrid');
   if (catPickerGrid) {
     catPickerGrid.innerHTML = categories.map(c => `
-      <div onclick="selectPostCategory(${c.id},'${c.slug}')"
+      <div onclick="selectPostCategory('${c.slug}',${c.id},'${c.icon} ${c.name}')"
         style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .2s"
         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"
         id="catPick_${c.id}">
@@ -2977,16 +2977,22 @@ async function searchCity(val) {
       const res = await fetch(url);
       const data = await res.json();
       if (!data.length) { suggestions.style.display = 'none'; return; }
-      suggestions.innerHTML = data.map(c => {
+      suggestions.innerHTML = '';
+      data.forEach(c => {
         const cp = c.codesPostaux ? c.codesPostaux[0] : '';
         const div = document.createElement('div');
-        div.style.cssText='padding:10px 14px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border);transition:background .15s';
-        div.onmouseover=()=>div.style.background='var(--surface3)';
-        div.onmouseout=()=>div.style.background='transparent';
-        div.innerHTML='<span style="font-weight:600">'+c.nom+'</span><span style="color:var(--muted);margin-left:8px">'+cp+'</span>';
-        div.onclick=()=>selectCity(c.nom, cp);
-        return div.outerHTML;
-      }).join('');
+        div.style.cssText = 'padding:12px 14px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border);transition:background .15s;-webkit-tap-highlight-color:rgba(232,255,71,.2)';
+        div.innerHTML = '<span style="font-weight:600">' + c.nom + '</span><span style="color:var(--muted);margin-left:8px">' + cp + '</span>';
+        // Utiliser touchstart + mousedown pour iOS et desktop
+        const handler = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          selectCity(c.nom, cp);
+        };
+        div.addEventListener('mousedown', handler);
+        div.addEventListener('touchstart', handler, { passive: false });
+        suggestions.appendChild(div);
+      });
       suggestions.style.display = 'block';
     } catch(e) { suggestions.style.display = 'none'; }
   }, 250);
