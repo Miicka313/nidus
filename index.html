@@ -410,7 +410,7 @@
   </ul>
   <div class="nav-right" id="navRight">
     <button class="btn btn-ghost" onclick="openModal('authModal')">Connexion</button>
-    <button class="btn btn-primary" onclick="openModal('postModal')">+ Déposer</button>
+    <button class="btn btn-primary" onclick="openPostModal()">+ Déposer</button>
   </div>
 </nav>
 
@@ -506,7 +506,7 @@
       <h2>Vendez en 2 minutes.</h2>
       <p>Prenez une photo, fixez un prix. Des acheteurs vous contactent.</p>
     </div>
-    <button class="btn btn-dark btn-lg" onclick="openModal('postModal')">Déposer une annonce gratuite</button>
+    <button class="btn btn-dark btn-lg" onclick="openPostModal()">Déposer une annonce gratuite</button>
   </div>
 
   <footer>
@@ -671,7 +671,7 @@
       <div class="profile-meta" id="profileMeta">—</div>
       <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="openModal('editProfileModal')">✏️ Modifier profil</button>
-        <button class="btn btn-ghost" onclick="openModal('postModal')">+ Nouvelle annonce</button>
+        <button class="btn btn-ghost" onclick="openPostModal()">+ Nouvelle annonce</button>
         <button id="adminBtn" class="btn btn-dark" style="display:none" onclick="showPage('admin')">🔧 Back-office</button>
       </div>
     </div>
@@ -800,8 +800,12 @@
 
     <!-- CONNEXION -->
     <div id="loginTab">
-      <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="vous@exemple.fr"/></div>
-      <div class="form-group"><label>Mot de passe</label><input type="password" id="loginPassword" placeholder="••••••••"/></div>
+      <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="vous@exemple.fr" autocomplete="email" name="email"/></div>
+      <div class="form-group"><label>Mot de passe</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" name="password"/></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input type="checkbox" id="stayLoggedIn" checked style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"/>
+        <label for="stayLoggedIn" style="font-size:.8rem;color:var(--muted);cursor:pointer">Rester connecté</label>
+      </div>
       <div id="loginError" class="form-error"></div>
       <button class="btn btn-primary btn-lg" style="width:100%;margin-top:4px" onclick="doLogin()" id="loginBtn">Se connecter</button>
       <p style="text-align:center;font-size:.75rem;color:var(--muted);margin-top:12px">
@@ -839,7 +843,7 @@
         <input type="tel" id="regPhone" placeholder="06 12 34 56 78" maxlength="14"/>
         <span style="font-size:.72rem;color:var(--muted)">Visible uniquement par les acheteurs intéressés</span>
       </div>
-      <div class="form-group"><label>Mot de passe *</label><input type="password" id="regPassword" placeholder="Min. 8 caractères"/></div>
+      <div class="form-group"><label>Mot de passe *</label><input type="password" id="regPassword" placeholder="Min. 8 caractères" autocomplete="new-password" name="new-password"/></div>
 
       <!-- CHAMPS PRO (cachés par défaut) -->
       <div id="proFields" style="display:none">
@@ -1088,12 +1092,47 @@
 
 <script>
 // ============================================
+// SÉCURITÉ — XSS + RATE LIMITING + VALIDATION
+// ============================================
+function sanitize(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+// Rate limiting côté client (anti-spam boutons)
+const _rl = {};
+function rateLimit(key, max, windowMs) {
+  const now = Date.now();
+  if (!_rl[key]) _rl[key] = [];
+  _rl[key] = _rl[key].filter(t => now - t < windowMs);
+  if (_rl[key].length >= max) return false;
+  _rl[key].push(now);
+  return true;
+}
+function validatePrice(p) { const n = parseFloat(p); return !isNaN(n) && n >= 0 && n <= 9999999; }
+function validateText(t, min=1, max=5000) { return t && t.trim().length >= min && t.trim().length <= max; }
+function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+// ============================================
 // SUPABASE CONFIG
 // ============================================
 const SUPABASE_URL = 'https://qnxjpjkqkbdeyccwwjyi.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueGpwamtxa2JkZXljY3d3anlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTMzNzYsImV4cCI6MjA5MjcyOTM3Nn0.KUV54FOdOUCvPoIxQIoRWIY1s49U-hX3Zd-A2p1gS5Q';
 const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    storageKey: 'nidus_auth',
+    storage: window.localStorage,
+    detectSessionInUrl: true,
+  }
+});
 
 // ============================================
 // STATE
@@ -1128,9 +1167,18 @@ async function init() {
       updateNav();
       closeModal('authModal');
       showToast('🎉 Bienvenue sur Nidus !');
+      // Si l'utilisateur voulait poster une annonce → ouvrir directement
+      const intent = sessionStorage.getItem('nidus_intent');
+      if (intent === 'post') {
+        sessionStorage.removeItem('nidus_intent');
+        setTimeout(() => {
+          openModal('postModal');
+          showToast('📝 Tu peux maintenant déposer ton annonce !');
+        }, 400);
+      }
       // Restaurer le brouillon si annonce en cours
       const hasDraft = sessionStorage.getItem('nidus_post_draft');
-      if (hasDraft) {
+      if (hasDraft && intent !== 'post') {
         setTimeout(() => {
           openModal('postModal');
           restorePostFormDraft();
@@ -1138,9 +1186,17 @@ async function init() {
         }, 500);
       }
     } else if (event === 'SIGNED_OUT') {
+      // Si pas de persist, c'est normal
       currentUser = null;
       currentProfile = null;
       updateNav();
+    }
+  });
+
+  // Déconnecter si l'utilisateur a choisi de ne pas rester connecté et ferme l'onglet
+  window.addEventListener('beforeunload', () => {
+    if (sessionStorage.getItem('nidus_no_persist') === '1') {
+      sb.auth.signOut();
     }
   });
 }
@@ -1148,15 +1204,43 @@ async function init() {
 // ============================================
 // AUTH
 // ============================================
+
+// Ouvrir le formulaire de dépôt — force connexion si pas connecté
+function openPostModal() {
+  if (!currentUser) {
+    // Sauvegarder l'intention de poster
+    sessionStorage.setItem('nidus_intent', 'post');
+    openModal('authModal');
+    // Afficher un message d'invitation
+    setTimeout(() => {
+      const err = document.getElementById('loginError');
+      if (err) {
+        err.style.color = 'var(--accent)';
+        err.textContent = '👆 Connecte-toi pour déposer une annonce';
+      }
+    }, 100);
+    return;
+  }
+  openModal('postModal');
+}
+
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
+  const stayLoggedIn = document.getElementById('stayLoggedIn')?.checked !== false;
   const btn = document.getElementById('loginBtn');
   if (!email || !password) { document.getElementById('loginError').textContent = 'Remplis tous les champs'; return; }
+  if (!validateEmail(email)) { document.getElementById('loginError').textContent = 'Email invalide'; return; }
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   const { error } = await sb.auth.signInWithPassword({ email, password });
   btn.disabled = false; btn.textContent = 'Se connecter';
   if (error) { document.getElementById('loginError').textContent = 'Email ou mot de passe incorrect'; return; }
+  // Si l'utilisateur ne veut pas rester connecté, on déconnectera à la fermeture
+  if (!stayLoggedIn) {
+    sessionStorage.setItem('nidus_no_persist', '1');
+  } else {
+    sessionStorage.removeItem('nidus_no_persist');
+  }
 }
 
 // Type de compte sélectionné
@@ -1396,13 +1480,13 @@ function updateNav() {
   if (currentUser && currentProfile) {
     navRight.innerHTML = `
       <span style="font-size:.82rem;color:var(--muted)">${currentProfile.full_name || currentUser.email}</span>
-      <button class="btn btn-primary" onclick="openModal('postModal')">+ Déposer</button>
+      <button class="btn btn-primary" onclick="openPostModal()">+ Déposer</button>
     `;
     navProfile.style.display = 'block';
   } else {
     navRight.innerHTML = `
       <button class="btn btn-ghost" onclick="openModal('authModal')">Connexion</button>
-      <button class="btn btn-primary" onclick="openModal('postModal')">+ Déposer</button>
+      <button class="btn btn-primary" onclick="openPostModal()">+ Déposer</button>
     `;
     navProfile.style.display = 'none';
   }
@@ -2074,24 +2158,26 @@ async function loadHomeListings() {
 
 function renderListingCard(l) {
   const timeAgo = getTimeAgo(l.created_at);
-  const city = l.city || 'France';
+  const city = sanitize(l.city || 'France');
   const isPro = l.seller_type === 'pro' || l.profiles?.account_type === 'pro';
-  const sellerName = isPro
+  const sellerName = sanitize(isPro
     ? (l.profiles?.company_name || 'Pro')
-    : (l.profiles?.full_name || '');
+    : (l.profiles?.full_name || ''));
+  const title = sanitize(l.title || '');
+  const imgSrc = l.images && l.images.length > 0 ? sanitize(l.images[0]) : '';
   return `
-    <div class="listing-card" onclick="openListing('${l.id}')">
+    <div class="listing-card" onclick="openListing('${sanitize(l.id)}')">
       <div class="listing-thumb">
-        ${l.images && l.images.length > 0 ? `<img src="${l.images[0]}" alt="${l.title}" loading="lazy"/>` : `<div style="font-size:2.5rem;display:flex;align-items:center;justify-content:center;height:100%">${l.categories?.icon || '📦'}</div>`}
+        ${imgSrc ? `<img src="${imgSrc}" alt="${title}" loading="lazy"/>` : `<div style="font-size:2.5rem;display:flex;align-items:center;justify-content:center;height:100%">${l.categories?.icon || '📦'}</div>`}
         ${l.is_urgent ? '<div class="listing-badge" style="background:#ff4444">⚡ URGENT</div>' : ''}
         ${l.is_boosted ? '<div class="listing-badge" style="background:var(--accent);color:#0a0a0a;top:auto;bottom:8px;right:8px">🌟 BOOST</div>' : ''}
         ${l.is_featured ? '<div class="listing-badge" style="background:linear-gradient(135deg,#667eea,#764ba2);top:auto;bottom:8px;left:8px">💎 UNE</div>' : ''}
         ${isPro ? '<div style="position:absolute;top:8px;left:8px;background:var(--accent);color:#0a0a0a;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:4px;font-family:Syne,sans-serif;letter-spacing:.5px">PRO</div>' : ''}
-        <button class="listing-fav-btn" onclick="toggleFav(event,'${l.id}')" title="Favori">🤍</button>
+        <button class="listing-fav-btn" onclick="toggleFav(event,'${sanitize(l.id)}')" title="Favori">🤍</button>
       </div>
       <div class="listing-body">
         <div class="listing-price">${formatPrice(l.price)}</div>
-        <div class="listing-title">${l.title}</div>
+        <div class="listing-title">${title}</div>
         <div class="listing-meta">
           <span>📍 ${city}</span>
           <span>· ${timeAgo}</span>
@@ -2212,7 +2298,7 @@ async function openListing(id) {
           </button>
           <p style="text-align:center;font-size:.72rem;color:var(--muted)">Connecte-toi pour contacter le vendeur</p>
         ` : `
-          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="openModal('postModal')">
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="openPostModal()">
             + Déposer une annonce
           </button>
         `}
@@ -2235,7 +2321,7 @@ async function openListing(id) {
   // Charger autres annonces du vendeur
   loadSellerOtherListings(l.user_id, id);
 
-  showPage('listingDetail');
+  showPage('listing-detail');
 }
 
 
@@ -2265,6 +2351,12 @@ async function doPostListing() {
   const isUrgent = document.getElementById('postUrgent').checked;
   const isNegotiable = document.getElementById('postNegotiable').checked;
   if (!title || !price || !city) { document.getElementById('postError').textContent = 'Titre, prix et ville sont requis'; return; }
+  // Validations de sécurité
+  if (!validateText(title, 3, 200)) { document.getElementById('postError').textContent = 'Titre entre 3 et 200 caractères'; return; }
+  if (!validatePrice(price)) { document.getElementById('postError').textContent = 'Prix invalide'; return; }
+  if (description && !validateText(description, 0, 5000)) { document.getElementById('postError').textContent = 'Description trop longue (5000 max)'; return; }
+  // Rate limit : max 10 publications par heure
+  if (!rateLimit('publish', 10, 3600000)) { showToast('⚠️ Trop de publications, réessaie plus tard', 'error'); return; }
 
   const catFields = getCategoryFieldValues();
   const btn = document.getElementById('postBtn');
@@ -2480,6 +2572,10 @@ function openMessageModal(sellerId, listingId, listingTitle) {
 async function doSendInitialMessage() {
   const content = document.getElementById('msgModalContent').value.trim();
   if (!content) return;
+  // Rate limit : max 5 messages par minute
+  if (!rateLimit('send_msg', 5, 60000)) { showToast('⚠️ Trop de messages envoyés, attends un peu', 'error'); return; }
+  // Validation
+  if (!validateText(content, 1, 2000)) { showToast('⚠️ Message trop long (2000 caractères max)', 'error'); return; }
   const btn = document.getElementById('sendMsgBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   // Upsert conversation
@@ -2541,38 +2637,54 @@ async function openConversation(convId, listingId, otherId) {
   } else {
     await sb.from('conversations').update({ buyer_unread: 0 }).eq('id', convId);
   }
-  const { data: otherProfile } = await sb.from('profiles').select('full_name').eq('id', otherId).single();
+  const { data: otherProfile } = await sb.from('profiles').select('full_name,company_name,account_type').eq('id', otherId).single();
   const { data: listing } = await sb.from('listings').select('title').eq('id', listingId).single();
-  const { data: msgs } = await sb.from('messages').select('*').eq('listing_id', listingId).or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`).order('created_at', { ascending: true });
+  // Charger les messages de cette conversation spécifique
+  const { data: msgs } = await sb.from('messages')
+    .select('*')
+    .eq('listing_id', listingId)
+    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${currentUser.id})`)
+    .order('created_at', { ascending: true });
+
+  const isPro = otherProfile?.account_type === 'pro';
+  const otherName = sanitize(isPro ? (otherProfile?.company_name || 'Pro') : (otherProfile?.full_name || 'Utilisateur'));
+
   const msgMain = document.getElementById('msgMain');
   msgMain.innerHTML = `
     <div class="msg-header">
-      <div class="conv-avatar">👤</div>
+      <div class="conv-avatar">${isPro ? '🏢' : '👤'}</div>
       <div>
-        <div style="font-weight:600;font-size:.9rem">${otherProfile?.full_name || 'Utilisateur'}</div>
-        <div style="font-size:.75rem;color:var(--muted)">${listing?.title || ''}</div>
+        <div style="font-weight:600;font-size:.9rem">${otherName}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${sanitize(listing?.title || '')}</div>
       </div>
     </div>
     <div class="msg-body" id="msgBody">
       ${msgs && msgs.length > 0 ? msgs.map(m => `
         <div>
-          <div class="msg-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">${m.content}</div>
+          <div class="msg-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">${sanitize(m.content)}</div>
           <div class="msg-time" style="text-align:${m.sender_id === currentUser.id ? 'right' : 'left'}">${getTimeAgo(m.created_at)}</div>
-        </div>`).join('') : '<div style="text-align:center;color:var(--muted);font-size:.82rem">Début de la conversation</div>'}
+        </div>`).join('') : '<div style="text-align:center;color:var(--muted);font-size:.82rem;padding:24px">Début de la conversation</div>'}
     </div>
     <div class="msg-footer">
-      <input class="msg-input" id="replyInput" placeholder="Votre message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply('${listingId}','${otherId}')}"/>
+      <input class="msg-input" id="replyInput" placeholder="Votre message..." maxlength="2000"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply('${listingId}','${otherId}')}"/>
       <button class="btn btn-primary" onclick="sendReply('${listingId}','${otherId}')">Envoyer</button>
     </div>`;
   const body = document.getElementById('msgBody');
-  body.scrollTop = body.scrollHeight;
+  if (body) body.scrollTop = body.scrollHeight;
+
+  // Realtime subscription
   if (messageSubscription) { sb.removeChannel(messageSubscription); }
-  messageSubscription = sb.channel('messages:' + listingId)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `listing_id=eq.${listingId}` }, payload => {
+  messageSubscription = sb.channel('conv:' + convId)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'messages',
+      filter: `listing_id=eq.${listingId}`
+    }, payload => {
       const m = payload.new;
+      if (m.sender_id !== otherId && m.sender_id !== currentUser.id) return;
       const body = document.getElementById('msgBody');
       if (!body) return;
-      body.innerHTML += `<div><div class="msg-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">${m.content}</div><div class="msg-time" style="text-align:${m.sender_id === currentUser.id ? 'right' : 'left'}">À l'instant</div></div>`;
+      body.innerHTML += `<div><div class="msg-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">${sanitize(m.content)}</div><div class="msg-time" style="text-align:${m.sender_id === currentUser.id ? 'right' : 'left'}">À l'instant</div></div>`;
       body.scrollTop = body.scrollHeight;
     }).subscribe();
   loadConversations();
@@ -2583,9 +2695,21 @@ async function sendReply(listingId, receiverId) {
   if (!input) return;
   const content = input.value.trim();
   if (!content) return;
+  if (!rateLimit('reply_msg', 10, 60000)) { showToast('⚠️ Trop de messages, attends un peu', 'error'); return; }
+  if (!validateText(content, 1, 2000)) return;
   input.value = '';
-  await sb.from('messages').insert({ listing_id: listingId, sender_id: currentUser.id, receiver_id: receiverId, content });
-  await sb.from('conversations').update({ last_message: content, last_message_at: new Date().toISOString() }).eq('id', currentConvId);
+  const isSeller = (await sb.from('conversations').select('seller_id').eq('id', currentConvId).single()).data?.seller_id === currentUser.id;
+  await sb.from('messages').insert({
+    listing_id: listingId,
+    sender_id: currentUser.id,
+    receiver_id: receiverId,
+    content
+  });
+  await sb.from('conversations').update({
+    last_message: content,
+    last_message_at: new Date().toISOString(),
+    ...(isSeller ? { buyer_unread: 1 } : { seller_unread: 1 })
+  }).eq('id', currentConvId);
 }
 
 // ============================================
@@ -2612,7 +2736,7 @@ async function loadMyListings() {
   const { data } = await sb.from('listings').select('*, categories(name,icon)').eq('user_id', currentUser.id).order('created_at', { ascending: false });
   const grid = document.getElementById('myListingsGrid');
   if (!data || data.length === 0) {
-    grid.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><h3>Aucune annonce</h3><button class="btn btn-primary" onclick="openModal('postModal')" style="margin-top:12px">Déposer ma première annonce</button></div>`;
+    grid.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><h3>Aucune annonce</h3><button class="btn btn-primary" onclick="openPostModal()" style="margin-top:12px">Déposer ma première annonce</button></div>`;
     return;
   }
   grid.innerHTML = data.map(l => `
