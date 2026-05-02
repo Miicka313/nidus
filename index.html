@@ -124,7 +124,7 @@
     .step-dot.done{background:var(--accent);opacity:.4}
 
     /* BOTTOM NAV MOBILE */
-    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:550;background:rgba(10,10,10,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-around;align-items:center}
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:600;background:rgba(10,10,10,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-around;align-items:center}
     .bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 12px;cursor:pointer;color:var(--muted);transition:color .2s;position:relative;min-width:56px}
     .bn-item.active{color:var(--accent)}
     .bn-item svg,.bn-item .bn-icon{font-size:1.3rem;line-height:1}
@@ -407,7 +407,7 @@
 <body>
 
 <!-- LOADING -->
-<div class="loading-overlay" id="loadingOverlay">
+<div class="loading-overlay hidden" id="loadingOverlay">
   <div class="logo" style="font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;letter-spacing:-1px">Nid<span style="color:#e8ff47">us</span></div>
   <div class="spinner" style="border-top-color:#e8ff47"></div>
 </div>
@@ -431,7 +431,7 @@
 <div class="page active" id="page-home">
 
   <!-- HERO : CARTE EN PREMIER -->
-  <section id="heroMap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:90px 16px 40px;position:relative;overflow:hidden">
+  <section id="heroMap" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:90px 16px 40px;position:relative;overflow:hidden">
     <div class="hero-bg"></div>
 
     <!-- Titre -->
