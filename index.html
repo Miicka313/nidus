@@ -50,7 +50,8 @@
     .btn-danger{background:var(--error);color:#fff}
     .btn-success{background:var(--success);color:#0a0a0a;font-weight:700}
     .btn-lg{padding:13px 28px;font-size:.95rem}
-    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+    .btn:disabled{opacity:.7;cursor:not-allowed;transform:none!important}
+    .btn-primary:disabled{background:var(--accent)!important;color:#0a0a0a!important}
 
     /* HERO */
     .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 24px 60px;text-align:center;position:relative;overflow:hidden}
@@ -1239,17 +1240,28 @@ async function doLogin() {
   const password = document.getElementById('loginPassword').value;
   const stayLoggedIn = document.getElementById('stayLoggedIn')?.checked !== false;
   const btn = document.getElementById('loginBtn');
-  if (!email || !password) { document.getElementById('loginError').textContent = 'Remplis tous les champs'; return; }
-  if (!validateEmail(email)) { document.getElementById('loginError').textContent = 'Email invalide'; return; }
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  btn.disabled = false; btn.textContent = 'Se connecter';
-  if (error) { document.getElementById('loginError').textContent = 'Email ou mot de passe incorrect'; return; }
-  // Si l'utilisateur ne veut pas rester connecté, on déconnectera à la fermeture
-  if (!stayLoggedIn) {
-    sessionStorage.setItem('nidus_no_persist', '1');
-  } else {
-    sessionStorage.removeItem('nidus_no_persist');
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Remplis tous les champs'; return; }
+  btn.disabled = true;
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#0a0a0a';
+  btn.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0a"></span> Connexion...';
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      errEl.textContent = 'Email ou mot de passe incorrect';
+    } else {
+      if (!stayLoggedIn) sessionStorage.setItem('nidus_no_persist', '1');
+      else sessionStorage.removeItem('nidus_no_persist');
+    }
+  } catch(e) {
+    errEl.textContent = 'Erreur réseau, réessaie';
+  } finally {
+    btn.disabled = false;
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.textContent = 'Se connecter';
   }
 }
 
