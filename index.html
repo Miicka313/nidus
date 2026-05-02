@@ -2794,13 +2794,24 @@ async function loadMyListings() {
 }
 
 async function loadMyFavs() {
-  const { data } = await sb.from('favorites').select('*, listings(*, categories(name,icon))').eq('user_id', currentUser.id);
+  if (!currentUser) return;
   const grid = document.getElementById('myFavsGrid');
+  grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div class="spinner" style="margin:0 auto 12px;border-top-color:var(--accent)"></div>Chargement...</div>';
+  const { data } = await sb.from('favorites')
+    .select('*, listings(*, categories(name,icon))')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
   if (!data || data.length === 0) {
     grid.innerHTML = `<div class="empty"><div class="empty-icon">❤️</div><h3>Aucun favori</h3><p>Explore les annonces et ajoute tes préférées !</p></div>`;
     return;
   }
-  grid.innerHTML = data.map(f => renderListingCard(f.listings)).join('');
+  // Filtrer les annonces supprimées
+  const valid = data.filter(f => f.listings && f.listings.status !== 'deleted');
+  if (valid.length === 0) {
+    grid.innerHTML = `<div class="empty"><div class="empty-icon">❤️</div><h3>Aucun favori actif</h3><p>Les annonces sauvegardées ont été supprimées</p></div>`;
+    return;
+  }
+  grid.innerHTML = valid.map(f => renderListingCard(f.listings)).join('');
 }
 
 async function deleteListing(id) {
@@ -2972,6 +2983,10 @@ function switchProfileTab(id, el) {
   document.querySelectorAll('#page-profile .tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   el.classList.add('active');
+  // Charger les données au clic
+  if (id === 'myFavs') loadMyFavs();
+  else if (id === 'myAlerts') renderAlerts();
+  else if (id === 'myListings') loadMyListings();
 }
 
 function switchAuthTab(tab, el) {
