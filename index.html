@@ -706,6 +706,7 @@
       <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="openModal('editProfileModal')">✏️ Modifier profil</button>
         <button class="btn btn-ghost" onclick="openPostModal()">+ Nouvelle annonce</button>
+        <button class="btn btn-danger" onclick="confirmLogout()">🚪 Déconnexion</button>
         <button class="btn btn-danger" onclick="confirmLogout()" style="margin-left:auto">🚪 Déconnexion</button>
         <button id="adminBtn" class="btn btn-dark" style="display:none" onclick="showPage('admin')">🔧 Back-office</button>
       </div>
@@ -1533,7 +1534,6 @@ async function loadProfile() {
     userFavorites = favs ? favs.map(f => f.listing_id) : [];
   } catch(e) { userFavorites = []; }
   updateNav();
-  updateBottomNavBadges();
 }
 
 function updateNav() {
@@ -2423,8 +2423,7 @@ async function doPostListing() {
   const safetyTimer = setTimeout(() => {
     btn.disabled = false;
     btn.textContent = '🚀 Publier gratuitement';
-    showToast('⚠️ Délai dépassé, réessaie', 'error');
-  }, 30000);
+  }, 10000);
 
   const { data: listing, error } = await sb.from('listings').insert({
     user_id: currentUser.id,
@@ -3008,10 +3007,7 @@ function showPage(name) {
   if (name === 'messages') { if (!currentUser) { openModal('authModal'); showPage('home'); return; } loadConversations(); }
   if (name === 'profile') { if (!currentUser) { openModal('authModal'); showPage('home'); return; } loadProfilePage(); }
   if (name === 'admin') { loadAdminDashboard(); }
-  // Sync bottom nav
-  const bnMap = { home: null, listings: 'bn-search', messages: 'bn-messages', profile: 'bn-account' };
-  document.querySelectorAll('.bn-item').forEach(i => i.classList.remove('active'));
-  if (bnMap[name]) { const el = document.getElementById(bnMap[name]); if(el) el.classList.add('active'); }
+
 }
 
 function switchAdminPanel(id, el) {
@@ -4441,29 +4437,10 @@ function resetSEO() {
 // ============================================
 // LOADER INITIAL
 // ============================================
-function showInitLoader() {
-  const loader = document.createElement('div');
-  loader.id = 'initLoader';
-  loader.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s';
-  loader.innerHTML = '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:2rem;letter-spacing:-1px;color:#f0f0f0">Nid<span style="color:#e8ff47">us</span></div><div style="margin-top:16px;width:40px;height:3px;background:#2c2c2c;border-radius:2px;overflow:hidden"><div id="loaderBar" style="height:100%;background:#e8ff47;width:0%;transition:width .3s;border-radius:2px"></div></div>';
-  document.body.appendChild(loader);
-  // Animation
-  setTimeout(() => { const b = document.getElementById('loaderBar'); if(b) b.style.width='60%'; }, 100);
-  setTimeout(() => { const b = document.getElementById('loaderBar'); if(b) b.style.width='90%'; }, 500);
-}
-
+function showInitLoader() {}
 function hideInitLoader() {
-  setTimeout(() => {
-    const b = document.getElementById('loaderBar');
-    if(b) b.style.width='100%';
-    setTimeout(() => {
-      const loader = document.getElementById('initLoader');
-      if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.remove(), 400);
-      }
-    }, 200);
-  }, 100);
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) overlay.classList.add('hidden');
 }
 
 // ============================================
