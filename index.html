@@ -432,6 +432,10 @@
       <div class="hero-badge"><span class="dot"></span>La marketplace française de demain</div>
       <h1 style="margin-bottom:8px">Trouve. Vends.<br><em>Vis.</em></h1>
       <p class="hero-sub" style="margin-bottom:0">Sélectionne ta région ou utilise ta position pour trouver les annonces près de chez toi</p>
+      <!-- Boutons connexion/inscription visibles si non connecté -->
+      <div id="heroAuthBtns" style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center">
+        <button onclick="openModal('authModal')" class="btn btn-primary btn-lg">Connexion / Inscription</button>
+      </div>
     </div>
 
     <!-- BARRE LOCALISATION -->
@@ -1539,6 +1543,7 @@ async function loadProfile() {
 function updateNav() {
   const navRight = document.getElementById('navRight');
   const navProfile = document.getElementById('navProfile');
+  const heroAuthBtns = document.getElementById('heroAuthBtns');
   if (currentUser && currentProfile) {
     const avatar = currentProfile.account_type === 'pro' ? '🏢' : '👤';
     navRight.innerHTML = `
@@ -1548,12 +1553,14 @@ function updateNav() {
       <button class="btn btn-primary" onclick="openPostModal()">+ Déposer</button>
     `;
     navProfile.style.display = 'block';
+    if (heroAuthBtns) heroAuthBtns.style.display = 'none';
   } else {
     navRight.innerHTML = `
       <button class="btn btn-ghost" onclick="openModal('authModal')">Connexion</button>
       <button class="btn btn-primary" onclick="openPostModal()">+ Déposer</button>
     `;
     navProfile.style.display = 'none';
+    if (heroAuthBtns) heroAuthBtns.style.display = 'flex';
   }
 }
 
