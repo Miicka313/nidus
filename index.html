@@ -1144,6 +1144,7 @@ let currentListingId = null;
 let currentConvId = null;
 let messageSubscription = null;
 let allListings = [];
+let userFavorites = [];
 
 // ============================================
 // INIT
@@ -1471,6 +1472,11 @@ async function loadProfile() {
   if (!currentUser) return;
   const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
   currentProfile = data;
+  // Charger les favoris de l'utilisateur
+  try {
+    const { data: favs } = await sb.from('favorites').select('listing_id').eq('user_id', currentUser.id);
+    userFavorites = favs ? favs.map(f => f.listing_id) : [];
+  } catch(e) { userFavorites = []; }
   updateNav();
 }
 
