@@ -4,13 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nidus — Trouve. Vends. Vis.</title>
-  <link rel="manifest" href="/manifest.json"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="Nidus"/>
-  <link rel="apple-touch-icon" href="/icon-192.png"/>
-  <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -1116,7 +1109,7 @@ let allListings = [];
 // ============================================
 // INIT
 // ============================================
-async function withTimeout(promise, ms = 5000) {
+async function withTimeout(promise, ms = 15000) {
   return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 }
 
@@ -1426,6 +1419,39 @@ function confirmLogout() {
 // ============================================
 // CATEGORIES
 // ============================================
+function populateCategorySelects() {
+  // Peupler le filtre catégories dans la page annonces
+  const filterCat = document.getElementById('filterCat');
+  if (filterCat) {
+    filterCat.innerHTML = '<option value="">Toutes catégories</option>';
+    categories.forEach(c => {
+      filterCat.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
+    });
+  }
+  // Peupler la grille de catégories dans le formulaire de dépôt
+  const catPickerGrid = document.getElementById('catPickerGrid');
+  if (catPickerGrid) {
+    catPickerGrid.innerHTML = categories.map(c => `
+      <div onclick="selectPostCategory(${c.id},'${c.slug}')"
+        style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .2s"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"
+        id="catPick_${c.id}">
+        <div style="font-size:1.6rem">${c.icon}</div>
+        <div style="font-size:.72rem;font-weight:600;margin-top:4px;font-family:Syne,sans-serif">${c.name}</div>
+      </div>`).join('');
+  }
+  // Peupler la grille de catégories sur la page d'accueil
+  const categoriesGrid = document.getElementById('categoriesGrid');
+  if (categoriesGrid && categoriesGrid.children.length === 0) {
+    categoriesGrid.innerHTML = categories.map(c => `
+      <div class="cat-card" onclick="filterCategory(${c.id})">
+        <div class="cat-icon">${c.icon}</div>
+        <div class="cat-name">${c.name}</div>
+      </div>`).join('');
+  }
+}
+
+
 async function loadCategories() {
   // Catégories en dur - fallback immédiat
   const DEFAULT_CATS = [
@@ -4024,6 +4050,93 @@ async function loadAllListingsFiltered(priceMin, priceMax, condition, sort, city
 // NOTIFICATIONS TEMPS REEL
 // ============================================
 let unreadMessages = 0;
+
+// ============================================
+// PWA INSTALL BANNER
+// ============================================
+let deferredPrompt = null;
+
+function initPWA() {
+  // Déjà installée ? Ne pas afficher
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  // Déjà fermée récemment ?
+  const dismissed = localStorage.getItem('nidus_pwa_dismissed');
+  if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return;
+
+  // Android : écouter l'event beforeinstallprompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showPWABanner('android');
+  });
+
+  // iOS : détecter Safari iOS
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandalone = window.navigator.standalone;
+  if (isIOS && !isInStandalone) {
+    setTimeout(() => showPWABanner('ios'), 3000);
+  }
+}
+
+function showPWABanner(type) {
+  if (document.getElementById('pwaBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwaBanner';
+  banner.style.cssText = `
+    position:fixed;bottom:0;left:0;right:0;z-index:9990;
+    background:#141414;border-top:1px solid #2c2c2c;
+    padding:16px 20px;display:flex;align-items:center;gap:14px;
+    animation:slideUp .3s ease;box-shadow:0 -8px 32px rgba(0,0,0,.6);
+  `;
+
+  const iosInstructions = type === 'ios' ? `
+    <div style="font-size:.72rem;color:#777;margin-top:4px;display:flex;align-items:center;gap:4px">
+      Appuie sur <span style="background:#2c2c2c;padding:2px 6px;border-radius:4px">⎙ Partager</span> puis <strong style="color:#aaa">"Sur l'écran d'accueil"</strong>
+    </div>` : '';
+
+  banner.innerHTML = `
+    <div style="width:44px;height:44px;background:#0a0a0a;border:1px solid #2c2c2c;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:Syne,sans-serif;font-weight:900;font-size:1.2rem;color:#e8ff47">N</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:Syne,sans-serif;font-weight:700;font-size:.9rem">Installer Nidus</div>
+      <div style="font-size:.75rem;color:#777;margin-top:2px">Accès rapide depuis ton écran d'accueil</div>
+      ${iosInstructions}
+    </div>
+    ${type === 'android' ? `<button onclick="installPWA()" style="background:#e8ff47;color:#0a0a0a;border:none;border-radius:100px;padding:9px 18px;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;font-family:DM Sans,sans-serif">Installer</button>` : ''}
+    <button onclick="dismissPWABanner()" style="background:transparent;border:none;color:#555;font-size:1.3rem;cursor:pointer;padding:4px;flex-shrink:0">✕</button>
+  `;
+
+  // Ajouter animation CSS
+  if (!document.getElementById('pwaStyle')) {
+    const style = document.createElement('style');
+    style.id = 'pwaStyle';
+    style.textContent = '@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}';
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(banner);
+}
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(choice => {
+    if (choice.outcome === 'accepted') {
+      dismissPWABanner();
+      showToast('🎉 Nidus installé !');
+    }
+    deferredPrompt = null;
+  });
+}
+
+function dismissPWABanner() {
+  const banner = document.getElementById('pwaBanner');
+  if (banner) {
+    banner.style.transition = 'transform .3s ease';
+    banner.style.transform = 'translateY(100%)';
+    setTimeout(() => banner.remove(), 300);
+  }
+  localStorage.setItem('nidus_pwa_dismissed', Date.now().toString());
+}
 
 function initNotifications() {
   if (!currentUser) return;
