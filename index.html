@@ -2314,6 +2314,10 @@ async function openListing(id) {
           onclick="handleContactSeller('${l.user_id}','${id}','${l.title.replace(/'/g,' ')}','${l.user_id === currentUser?.id}')">
           💬 Contacter le vendeur
         </button>
+        ${currentUser && l.profiles?.phone && l.user_id !== currentUser?.id ? `
+          <a href="tel:${l.profiles.phone.replace(/\s/g,'')}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:10px;font-size:.85rem;color:var(--text);text-decoration:none;margin-bottom:10px;transition:all .2s;box-sizing:border-box" onmouseover="this.style.borderColor='var(--success)';this.style.color='var(--success)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+            📞 ${l.profiles.phone}
+          </a>` : ''}
         <button onclick="toggleFav(event,'${id}')" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:10px;font-size:.85rem;cursor:pointer;color:var(--text);transition:all .2s" id="favBtn_${id}">
           ${isFav?'❤️ Retirer des favoris':'🤍 Ajouter aux favoris'}
         </button>
