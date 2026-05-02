@@ -135,6 +135,9 @@
       .page.active{padding-bottom:80px}
       nav .nav-links{display:none}
       nav{padding:12px 16px}
+      #heroMap{min-height:auto!important;padding:80px 16px 24px!important}
+      .hero{min-height:auto!important;padding:80px 16px 40px!important}
+      #page-home .section{padding:24px 16px!important}
     }
     body.posting-mode .nav-links,
     body.posting-mode .bottom-nav,
@@ -4438,28 +4441,20 @@ function resetSEO() {
 // LOADER INITIAL
 // ============================================
 function showInitLoader() {
-  const loader = document.createElement('div');
-  loader.id = 'initLoader';
-  loader.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s';
-  loader.innerHTML = '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:2rem;letter-spacing:-1px;color:#f0f0f0">Nid<span style="color:#e8ff47">us</span></div><div style="margin-top:16px;width:40px;height:3px;background:#2c2c2c;border-radius:2px;overflow:hidden"><div id="loaderBar" style="height:100%;background:#e8ff47;width:0%;transition:width .3s;border-radius:2px"></div></div>';
-  document.body.appendChild(loader);
-  // Animation
-  setTimeout(() => { const b = document.getElementById('loaderBar'); if(b) b.style.width='60%'; }, 100);
-  setTimeout(() => { const b = document.getElementById('loaderBar'); if(b) b.style.width='90%'; }, 500);
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) overlay.classList.remove('hidden');
 }
 
 function hideInitLoader() {
-  setTimeout(() => {
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
     const b = document.getElementById('loaderBar');
-    if(b) b.style.width='100%';
-    setTimeout(() => {
-      const loader = document.getElementById('initLoader');
-      if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.remove(), 400);
-      }
-    }, 200);
-  }, 100);
+    if(b) { b.style.width='100%'; }
+    setTimeout(() => overlay.classList.add('hidden'), 300);
+  }
+  // Aussi cacher l'ancien initLoader si présent
+  const old = document.getElementById('initLoader');
+  if (old) { old.style.opacity='0'; setTimeout(()=>old.remove(),400); }
 }
 
 // ============================================
@@ -4593,7 +4588,7 @@ initTheme();
 showInitLoader();
 
 // Timeout de sécurité : force la disparition du loader après 6 secondes
-const loaderTimeout = setTimeout(() => hideInitLoader(), 6000);
+const loaderTimeout = setTimeout(() => hideInitLoader(), 4000);
 
 (async () => {
   try {
