@@ -1176,6 +1176,15 @@ async function init() {
           openModal('postModal');
           showToast('📝 Tu peux maintenant déposer ton annonce !');
         }, 400);
+      } else if (intent === 'message') {
+        sessionStorage.removeItem('nidus_intent');
+        const intentData = JSON.parse(sessionStorage.getItem('nidus_intent_data') || '{}');
+        sessionStorage.removeItem('nidus_intent_data');
+        if (intentData.sellerId) {
+          setTimeout(() => {
+            openMessageModal(intentData.sellerId, intentData.listingId, intentData.listingTitle);
+          }, 400);
+        }
       }
       // Restaurer le brouillon si annonce en cours
       const hasDraft = sessionStorage.getItem('nidus_post_draft');
@@ -2289,25 +2298,13 @@ async function openListing(id) {
           </div>
         </div>
 
-        ${!isOwner && currentUser ? `
-          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;margin-bottom:10px;font-size:.95rem"
-            onclick="openMessageModal('${l.user_id}','${id}','${l.title.replace(/'/g,' ')}')">
-            💬 Contacter le vendeur
-          </button>
-          <button onclick="toggleFav(event,'${id}')" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:10px;font-size:.85rem;cursor:pointer;color:var(--text);transition:all .2s">
-            ${isFav?'❤️ Retirer des favoris':'🤍 Ajouter aux favoris'}
-          </button>
-        ` : !currentUser ? `
-          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;margin-bottom:10px"
-            onclick="openModal('authModal')">
-            💬 Contacter le vendeur
-          </button>
-          <p style="text-align:center;font-size:.72rem;color:var(--muted)">Connecte-toi pour contacter le vendeur</p>
-        ` : `
-          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="openPostModal()">
-            + Déposer une annonce
-          </button>
-        `}
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;margin-bottom:10px;font-size:.95rem"
+          onclick="handleContactSeller('${l.user_id}','${id}','${l.title.replace(/'/g,' ')}','${l.user_id === currentUser?.id}')">
+          💬 Contacter le vendeur
+        </button>
+        <button onclick="toggleFav(event,'${id}')" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:10px;font-size:.85rem;cursor:pointer;color:var(--text);transition:all .2s" id="favBtn_${id}">
+          ${isFav?'❤️ Retirer des favoris':'🤍 Ajouter aux favoris'}
+        </button>
 
         ${isPro && l.profiles?.company_address ? `
           <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)">
@@ -2565,6 +2562,26 @@ async function toggleFav(e, listingId) {
 // ============================================
 let activeMsgListingId = null;
 let activeMsgReceiverId = null;
+
+function handleContactSeller(sellerId, listingId, listingTitle, isOwner) {
+  // Vérifier si c'est son propre annonce
+  if (currentUser && currentUser.id === sellerId) {
+    showToast('💡 C\'est votre propre annonce', 'info');
+    return;
+  }
+  // Vérifier si connecté
+  if (!currentUser) {
+    sessionStorage.setItem('nidus_intent', 'message');
+    sessionStorage.setItem('nidus_intent_data', JSON.stringify({ sellerId, listingId, listingTitle }));
+    openModal('authModal');
+    setTimeout(() => {
+      const err = document.getElementById('loginError');
+      if (err) { err.style.color = 'var(--accent)'; err.textContent = '👆 Connecte-toi pour contacter le vendeur'; }
+    }, 100);
+    return;
+  }
+  openMessageModal(sellerId, listingId, listingTitle);
+}
 
 function openMessageModal(sellerId, listingId, listingTitle) {
   if (!currentUser) { openModal('authModal'); return; }
