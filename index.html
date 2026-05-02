@@ -1505,8 +1505,11 @@ function updateNav() {
   const navRight = document.getElementById('navRight');
   const navProfile = document.getElementById('navProfile');
   if (currentUser && currentProfile) {
+    const avatar = currentProfile.account_type === 'pro' ? '🏢' : '👤';
     navRight.innerHTML = `
-      <span style="font-size:.82rem;color:var(--muted)">${currentProfile.full_name || currentUser.email}</span>
+      <span onclick="showPage('profile')" style="font-size:.82rem;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:100px;border:1px solid var(--border);transition:all .2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        ${avatar} ${sanitize(currentProfile.full_name || currentUser.email)}
+      </span>
       <button class="btn btn-primary" onclick="openPostModal()">+ Déposer</button>
     `;
     navProfile.style.display = 'block';
