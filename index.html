@@ -2391,23 +2391,14 @@ async function openListing(id) {
 
 
 async function doPostListing() {
-  if (!currentUser) {
-    savePostFormDraft();
-    openModal('authModal');
-    closeModal('postModal');
-    return;
-  }
-  // Vérifier limite annonces
+  if (!currentUser) { savePostFormDraft(); openModal('authModal'); closeModal('postModal'); return; }
   const canPost = await checkListingLimit();
   if (!canPost) return;
+  if (!selectedCategoryId) { document.getElementById('postError').textContent = 'Choisis une catégorie'; return; }
 
-  // Traiter paiement boost si nécessaire
-  const boostOk = await processBoostPayment();
-  if (!boostOk) return;
-  if (!selectedCategoryId) { showToast('⚠️ Choisis une catégorie !', 'error'); return; }
   const title = document.getElementById('postTitle').value.trim();
-  const price = parseFloat(document.getElementById('postPrice').value);
-  // Get city from hidden field (set by selectCity) or fallback to search input
+  const priceVal = document.getElementById('postPrice').value;
+  const price = parseFloat(priceVal);
   const cityHidden = document.getElementById('postCity').value.trim();
   const citySearch = document.getElementById('postCitySearch').value.trim();
   const city = cityHidden || citySearch;
@@ -2415,85 +2406,156 @@ async function doPostListing() {
   const description = document.getElementById('postDescription').value.trim();
   const isUrgent = document.getElementById('postUrgent').checked;
   const isNegotiable = document.getElementById('postNegotiable').checked;
-  if (!title || !price || !city) { document.getElementById('postError').textContent = 'Titre, prix et ville sont requis'; return; }
-  // Validations de sécurité
-  if (!validateText(title, 3, 200)) { document.getElementById('postError').textContent = 'Titre entre 3 et 200 caractères'; return; }
-  if (!validatePrice(price)) { document.getElementById('postError').textContent = 'Prix invalide'; return; }
-  if (description && !validateText(description, 0, 5000)) { document.getElementById('postError').textContent = 'Description trop longue (5000 max)'; return; }
-  // Rate limit : max 10 publications par heure
-  if (!rateLimit('publish', 10, 3600000)) { showToast('⚠️ Trop de publications, réessaie plus tard', 'error'); return; }
 
-  const catFields = getCategoryFieldValues();
+  // Validations
+  const errEl = document.getElementById('postError');
+  if (!title || title.length < 3) { errEl.textContent = 'Titre requis (min. 3 caractères)'; return; }
+  if (!price || price <= 0) { errEl.textContent = 'Prix requis'; return; }
+  if (!city) { errEl.textContent = 'Ville requise'; return; }
+  errEl.textContent = '';
+
   const btn = document.getElementById('postBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Publication...';
-  // Safety: re-enable button after 30s max
-  const safetyTimer = setTimeout(() => {
+  btn.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0a"></span> Publication...';
+
+  try {
+    // 1. Créer l'annonce
+    const catFields = getCategoryFieldValues();
+    const { data: listing, error } = await sb.from('listings').insert({
+      user_id: currentUser.id,
+      title, price,
+      category_id: selectedCategoryId,
+      city,
+      zip_code: zipCode || null,
+      description,
+      is_urgent: isUrgent,
+      price_negotiable: isNegotiable,
+      status: 'active',
+      images: [],
+      condition: (() => {
+        const e = catFields.etat || '';
+        if (e.includes('Neuf') || e.includes('jamais')) return 'new';
+        if (e.includes('Comme neuf') || e.includes('Très bon') || e.includes('Tres bon')) return 'like_new';
+        if (e.includes('Bon')) return 'good';
+        if (e.includes('correct')) return 'fair';
+        return 'good';
+      })()
+    }).select().single();
+
+    if (error) throw new Error(error.message);
+
+    // 2. Upload photos avec timeout strict
+    if (selectedPhotos.length > 0) {
+      btn.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0a"></span> Envoi photos...';
+      try {
+        const imageUrls = await Promise.race([
+          uploadPhotos(listing.id),
+          new Promise(resolve => setTimeout(() => resolve([]), 20000))
+        ]);
+        if (imageUrls.length > 0) {
+          await sb.from('listings').update({ images: imageUrls }).eq('id', listing.id);
+        }
+      } catch(e) { /* Photos échouent - annonce publiée quand même */ }
+    }
+
+    // 3. Attributs catégorie
+    if (Object.keys(catFields).length > 0) {
+      await sb.from('listing_attributes').upsert({ listing_id: listing.id, attributes: catFields }).catch(() => {});
+    }
+
+    // 4. Reset formulaire
+    selectedPhotos = [];
+    selectedCategorySlug = null;
+    selectedCategoryId = null;
+    selectedBoosts = new Set();
+    const photoGrid = document.getElementById('photoPreviewGrid');
+    if (photoGrid) photoGrid.innerHTML = '';
+    const dropZone = document.getElementById('photoDropZone');
+    if (dropZone) dropZone.style.display = 'block';
+    ['postTitle','postPrice','postCity','postCitySearch','postZip','postDescription'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value = '';
+    });
+    document.querySelectorAll('#boostOptions input[type=checkbox]').forEach(cb => cb.checked = false);
+    goToPostStep(1);
+    closeModal('postModal');
+
+    // 5. Page de confirmation 🎉
+    showConfirmationPage(listing, title, price, city);
+    await loadHomeListings();
+
+  } catch(e) {
+    errEl.textContent = 'Erreur : ' + e.message;
     btn.disabled = false;
     btn.textContent = '🚀 Publier gratuitement';
-  }, 10000);
+  }
+}
 
-  const { data: listing, error } = await sb.from('listings').insert({
-    user_id: currentUser.id,
-    title,
-    price,
-    category_id: selectedCategoryId,
-    city,
-    zip_code: zipCode || null,
-    description,
-    is_urgent: isUrgent,
-    price_negotiable: isNegotiable,
-    status: 'active',
-    images: [],
-    condition: (function() {
-      const e = catFields.etat || '';
-      if (e.includes('Neuf') || e.includes('jamais')) return 'new';
-      if (e.includes('Comme neuf') || e.includes('Tres bon') || e.includes('très bon') || e.includes('Très bon')) return 'like_new';
-      if (e.includes('Bon')) return 'good';
-      if (e.includes('correct')) return 'fair';
-      if (e.includes('pieces') || e.includes('pièces') || e.includes('Mauvais')) return 'poor';
-      return 'good';
-    })(),
-    // Stocker les champs spécifiques dans la description étendue
-  }).select().single();
-
-  if (error) { document.getElementById('postError').textContent = error.message; btn.disabled = false; btn.textContent = '🚀 Publier gratuitement'; return; }
-
-  // Upload photos
-  if (selectedPhotos.length > 0) {
-    btn.innerHTML = '<span class="spinner"></span> Compression & envoi... ('+selectedPhotos.length+' photo'+(selectedPhotos.length>1?'s':'')+')';
-    const imageUrls = await uploadPhotos(listing.id);
-    if (imageUrls.length > 0) {
-      await sb.from('listings').update({ images: imageUrls }).eq('id', listing.id);
-    }
+function showConfirmationPage(listing, title, price, city) {
+  // Créer une overlay de confirmation
+  let conf = document.getElementById('confirmationOverlay');
+  if (!conf) {
+    conf = document.createElement('div');
+    conf.id = 'confirmationOverlay';
+    conf.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,.95);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .3s ease';
+    document.body.appendChild(conf);
+    const style = document.createElement('style');
+    style.textContent = '@keyframes fadeIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}@keyframes confettiDrop{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}';
+    document.head.appendChild(style);
   }
 
-  // Sauvegarder les champs spécifiques dans une table dédiée
-  if (Object.keys(catFields).length > 0) {
-    await sb.from('listing_attributes').upsert({
-      listing_id: listing.id,
-      attributes: catFields
-    }).catch(() => {});
-  }
+  conf.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:40px 32px;max-width:440px;width:100%;text-align:center;position:relative;overflow:hidden">
+      <!-- Confettis -->
+      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+        ${Array.from({length:12},(_,i)=>`<div style="position:absolute;width:8px;height:8px;border-radius:${i%2?'50%':'2px'};background:${['#e8ff47','#fff','#ff6b35','#4ade80'][i%4]};left:${8+i*7}%;animation:confettiDrop ${1.5+i*.2}s ease-in ${i*.1}s forwards"></div>`).join('')}
+      </div>
 
-  // Toujours réactiver le bouton quoi qu'il arrive
-  clearTimeout(safetyTimer);
-  btn.disabled = false;
-  btn.textContent = '🚀 Publier gratuitement';
-  selectedPhotos = [];
-  selectedCategorySlug = null;
-  selectedCategoryId = null;
-  document.getElementById('photoPreviewGrid').innerHTML = '';
-  document.getElementById('photoDropZone').style.display = 'block';
-  goToPostStep(1);
-  closeModal('postModal');
-  showToast('🎉 Annonce publiée !');
-  ['postTitle','postPrice','postCity','postCitySearch','postZip','postDescription'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  document.querySelectorAll('#boostOptions input[type=checkbox]').forEach(cb => cb.checked = false);
-  selectedBoosts = new Set();
-  await loadHomeListings();
+      <!-- Icône succès -->
+      <div style="width:80px;height:80px;background:rgba(232,255,71,.15);border:2px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto 20px">
+        🎉
+      </div>
+
+      <h2 style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.6rem;margin-bottom:8px;letter-spacing:-.5px">Annonce publiée !</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:24px;line-height:1.6">
+        Merci ${sanitize(currentProfile?.full_name?.split(' ')[0] || '')} ! Ton annonce est maintenant visible par tous les utilisateurs de Nidus.
+      </p>
+
+      <!-- Récap annonce -->
+      <div style="background:var(--surface2);border-radius:14px;padding:16px;margin-bottom:24px;text-align:left">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;margin-bottom:4px">${sanitize(title)}</div>
+        <div style="color:var(--accent);font-family:'Syne',sans-serif;font-weight:900;font-size:1.3rem;margin-bottom:6px">${formatPrice(price)}</div>
+        <div style="color:var(--muted);font-size:.8rem">📍 ${sanitize(city)}</div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;flex-direction:column">
+        <button onclick="viewMyListing('${listing.id}')" class="btn btn-primary" style="width:100%;padding:13px;font-size:.95rem">
+          👁️ Voir mon annonce
+        </button>
+        <button onclick="closeConfirmation()" class="btn btn-ghost" style="width:100%;padding:11px">
+          Retour à l'accueil
+        </button>
+        <button onclick="closeConfirmation();openPostModal()" style="background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;padding:4px">
+          + Déposer une autre annonce
+        </button>
+      </div>
+    </div>`;
+  conf.style.display = 'flex';
+}
+
+function closeConfirmation() {
+  const conf = document.getElementById('confirmationOverlay');
+  if (conf) conf.style.display = 'none';
   showPage('home');
 }
+
+async function viewMyListing(id) {
+  const conf = document.getElementById('confirmationOverlay');
+  if (conf) conf.style.display = 'none';
+  await openListing(id);
+}
+
+
 
 function filterCategory(catId) {
   const cat = categories.find(c => c.id === catId);
