@@ -2460,7 +2460,9 @@ async function doPostListing() {
 
     // 3. Attributs catégorie
     if (Object.keys(catFields).length > 0) {
-      await sb.from('listing_attributes').upsert({ listing_id: listing.id, attributes: catFields }).catch(() => {});
+      try {
+        await sb.from('listing_attributes').upsert({ listing_id: listing.id, attributes: catFields });
+      } catch(e) { console.warn('listing_attributes:', e.message); }
     }
 
     // 4. Reset formulaire
