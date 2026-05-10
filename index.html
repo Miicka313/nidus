@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nidus — Trouve. Vends. Vis.</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,400&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script src="https://js.stripe.com/v3/"></script>
@@ -35,7 +35,7 @@
     .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:-1px;cursor:pointer;color:var(--text)}
     .logo span{color:var(--accent)}
     .nav-links{display:flex;gap:24px;list-style:none}
-    .nav-links a{color:var(--muted);text-decoration:none;font-size:.85rem;font-weight:500;cursor:pointer;transition:color .2s;font-family:'Inter',sans-serif}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:.85rem;font-weight:500;cursor:pointer;transition:color .2s}
     .nav-links a:hover{color:var(--text)}
     .nav-right{display:flex;gap:10px;align-items:center}
 
@@ -44,7 +44,7 @@
     .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
     .btn-ghost:hover{color:var(--text);border-color:var(--muted)}
     .btn-primary{background:var(--accent);color:#0a0a0a;font-weight:700}
-    .btn-primary:hover{background:#fff;transform:scale(1.03);box-shadow:0 6px 24px rgba(232,255,71,.35)}
+    .btn-primary:hover{background:#fff;transform:scale(1.03);box-shadow:0 4px 20px rgba(232,255,71,.3)}
     .btn-dark{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
     .btn-dark:hover{border-color:var(--accent);color:var(--accent)}
     .btn-danger{background:var(--error);color:#fff}
@@ -83,36 +83,36 @@
     .container{max-width:1200px;margin:0 auto;padding:0 24px}
     .section{padding:64px 24px;max-width:1200px;margin:0 auto}
     .section-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:28px}
-    .section-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:900;letter-spacing:-.8px}
+    .section-title{font-family:'Syne',sans-serif;font-size:1.55rem;font-weight:900;letter-spacing:-.6px}
     .link-accent{color:var(--accent);font-size:.82rem;text-decoration:none;cursor:pointer}
     .link-accent:hover{text-decoration:underline}
 
     /* CATEGORIES */
     .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-    .cat-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;cursor:pointer;transition:all .3s cubic-bezier(.25,.8,.25,1);color:var(--text);display:flex;flex-direction:column;gap:8px}
-    .cat-card:hover{border-color:var(--accent);transform:translateY(-3px);background:rgba(232,255,71,.04);box-shadow:0 12px 40px rgba(232,255,71,.08)}
+    .cat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;cursor:pointer;transition:all .3s ease;color:var(--text);display:flex;flex-direction:column;gap:8px}
+    .cat-card:hover{border-color:var(--accent);transform:translateY(-3px);background:rgba(232,255,71,.03);box-shadow:0 12px 40px rgba(0,0,0,.4)}
     .cat-icon{font-size:1.6rem}
     .cat-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem}
     .cat-count{font-size:.7rem;color:var(--muted)}
 
     /* LISTINGS GRID */
     .listings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-    .listing-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;cursor:pointer;transition:all .3s cubic-bezier(.25,.8,.25,1);position:relative}
-    .listing-card:hover{border-color:rgba(232,255,71,.25);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(232,255,71,.1)}
-    .listing-thumb{width:100%;height:190px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,var(--surface2),var(--surface3));position:relative}
+    .listing-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .3s cubic-bezier(.25,.8,.25,1);position:relative}
+    .listing-card:hover{border-color:rgba(232,255,71,.3);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.5)}
+    .listing-thumb{width:100%;height:185px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,var(--surface2),var(--surface3));position:relative}
     .listing-thumb img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
     .listing-badge{position:absolute;top:10px;left:10px;background:var(--accent);color:#0a0a0a;font-size:.62rem;font-weight:700;font-family:'Syne',sans-serif;padding:2px 8px;border-radius:100px}
     .listing-fav-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;background:rgba(10,10,10,.7);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;cursor:pointer;border:none;transition:transform .2s}
     .listing-fav-btn:hover{transform:scale(1.2)}
-    .listing-body{padding:14px 16px 16px}
-    .listing-price{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:900;color:var(--accent);margin-bottom:5px;letter-spacing:-.5px}
-    .listing-title{font-size:.88rem;color:var(--text);margin-bottom:8px;font-weight:500;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;letter-spacing:-.1px}
-    .listing-meta{display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--muted);font-weight:400}
+    .listing-body{padding:14px}
+    .listing-price{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:900;color:var(--accent);margin-bottom:5px;letter-spacing:-.3px}
+    .listing-title{font-size:.9rem;color:var(--text);margin-bottom:8px;font-weight:500;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .listing-meta{display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted)}
 
     /* SELL BANNER */
     .sell-banner{background:linear-gradient(135deg,var(--accent),#c8e830);border-radius:20px;padding:44px 48px;display:flex;align-items:center;justify-content:space-between;gap:24px;overflow:hidden;position:relative;margin:0 24px 64px;max-width:1152px;margin-left:auto;margin-right:auto}
     .sell-banner::after{content:'NIDUS';position:absolute;right:-16px;top:50%;transform:translateY(-50%);font-family:'Syne',sans-serif;font-size:8rem;font-weight:800;color:rgba(0,0,0,.06);letter-spacing:-4px;pointer-events:none}
-    .sell-banner h2{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:900;color:#0a0a0a;margin-bottom:6px;letter-spacing:-1px}
+    .sell-banner h2{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#0a0a0a;margin-bottom:6px;letter-spacing:-1px}
     .sell-banner p{color:rgba(0,0,0,.6);font-size:.9rem}
 
     /* MODAL */
@@ -138,7 +138,7 @@
     .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px;width:100%;max-width:460px;transform:scale(.93);transition:transform .25s;position:relative;max-height:90vh;overflow-y:auto}
     .overlay.open .modal{transform:scale(1)}
     .modal-wide{max-width:560px}
-    .modal h3{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:900;margin-bottom:22px;letter-spacing:-.5px}
+    .modal h3{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:22px}
     .modal-close{position:absolute;top:14px;right:14px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;transition:all .2s}
     .modal-close:hover{color:var(--text)}
 
@@ -283,8 +283,6 @@
     .nav-right{gap:6px}
     .nav-right .btn-ghost{display:none}
     .logo{font-size:1.3rem}
-    .nav-links a{font-size:.72rem;padding:4px 10px;background:var(--surface2);border-radius:100px;white-space:nowrap}
-    .nav-links::-webkit-scrollbar{display:none}
 
     /* HERO */
     .hero{padding:80px 16px 40px;text-align:center}
@@ -838,7 +836,6 @@
 
     <!-- CONNEXION -->
     <div id="loginTab">
-      
       <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="vous@exemple.fr" autocomplete="email" name="email"/></div>
       <div class="form-group"><label>Mot de passe</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" name="password"/></div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
@@ -1206,8 +1203,12 @@ async function init() {
       await loadProfile();
       updateNav();
       closeModal('authModal');
-      const emailEl=document.getElementById('loginEmail'); if(emailEl) emailEl.value='';
-      const passEl=document.getElementById('loginPassword'); if(passEl) passEl.value='';
+      setTimeout(() => {
+        const ef = document.getElementById('loginEmail');
+        const pf = document.getElementById('loginPassword');
+        if(ef) ef.value = '';
+        if(pf) pf.value = '';
+      }, 100);
       showToast('🎉 Bienvenue sur Nidus !');
       // Si l'utilisateur voulait poster une annonce → ouvrir directement
       const intent = sessionStorage.getItem('nidus_intent');
@@ -2392,25 +2393,25 @@ async function openListing(id) {
 
 async function doPostListing() {
   if (!currentUser) { savePostFormDraft(); openModal('authModal'); closeModal('postModal'); return; }
+
   const canPost = await checkListingLimit();
   if (!canPost) return;
+
   if (!selectedCategoryId) { document.getElementById('postError').textContent = 'Choisis une catégorie'; return; }
 
   const title = document.getElementById('postTitle').value.trim();
-  const priceVal = document.getElementById('postPrice').value;
-  const price = parseFloat(priceVal);
+  const price = parseFloat(document.getElementById('postPrice').value);
   const cityHidden = document.getElementById('postCity').value.trim();
   const citySearch = document.getElementById('postCitySearch').value.trim();
   const city = cityHidden || citySearch;
   const zipCode = document.getElementById('postZip').value.trim();
   const description = document.getElementById('postDescription').value.trim();
-  const isUrgent = document.getElementById('postUrgent').checked;
-  const isNegotiable = document.getElementById('postNegotiable').checked;
+  const isUrgent = document.getElementById('postUrgent') && document.getElementById('postUrgent').checked;
+  const isNegotiable = document.getElementById('postNegotiable') && document.getElementById('postNegotiable').checked;
 
-  // Validations
   const errEl = document.getElementById('postError');
-  if (!title || title.length < 3) { errEl.textContent = 'Titre requis (min. 3 caractères)'; return; }
-  if (!price || price <= 0) { errEl.textContent = 'Prix requis'; return; }
+  if (!title || title.length < 2) { errEl.textContent = 'Titre requis'; return; }
+  if (!price || isNaN(price) || price < 0) { errEl.textContent = 'Prix requis'; return; }
   if (!city) { errEl.textContent = 'Ville requise'; return; }
   errEl.textContent = '';
 
@@ -2419,8 +2420,16 @@ async function doPostListing() {
   btn.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0a"></span> Publication...';
 
   try {
-    // 1. Créer l'annonce
     const catFields = getCategoryFieldValues();
+    const condition = (() => {
+      const e = (catFields.etat || '').toLowerCase();
+      if (e.includes('neuf') || e.includes('jamais')) return 'new';
+      if (e.includes('comme neuf') || e.includes('très bon') || e.includes('tres bon')) return 'like_new';
+      if (e.includes('bon')) return 'good';
+      if (e.includes('correct')) return 'fair';
+      return 'good';
+    })();
+
     const { data: listing, error } = await sb.from('listings').insert({
       user_id: currentUser.id,
       title, price,
@@ -2428,48 +2437,42 @@ async function doPostListing() {
       city,
       zip_code: zipCode || null,
       description,
-      is_urgent: isUrgent,
-      price_negotiable: isNegotiable,
+      is_urgent: isUrgent || false,
+      price_negotiable: isNegotiable || false,
       status: 'active',
       images: [],
-      condition: (() => {
-        const e = catFields.etat || '';
-        if (e.includes('Neuf') || e.includes('jamais')) return 'new';
-        if (e.includes('Comme neuf') || e.includes('Très bon') || e.includes('Tres bon')) return 'like_new';
-        if (e.includes('Bon')) return 'good';
-        if (e.includes('correct')) return 'fair';
-        return 'good';
-      })()
+      condition,
+      seller_type: currentProfile?.account_type || 'perso'
     }).select().single();
 
     if (error) throw new Error(error.message);
 
-    // 2. Upload photos avec timeout strict
-    if (selectedPhotos.length > 0) {
+    // Upload photos avec timeout
+    if (selectedPhotos && selectedPhotos.length > 0) {
       btn.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0a"></span> Envoi photos...';
       try {
         const imageUrls = await Promise.race([
           uploadPhotos(listing.id),
-          new Promise(resolve => setTimeout(() => resolve([]), 20000))
+          new Promise(resolve => setTimeout(() => resolve([]), 15000))
         ]);
-        if (imageUrls.length > 0) {
+        if (imageUrls && imageUrls.length > 0) {
           await sb.from('listings').update({ images: imageUrls }).eq('id', listing.id);
         }
-      } catch(e) { /* Photos échouent - annonce publiée quand même */ }
+      } catch(e) { console.warn('Upload photos:', e); }
     }
 
-    // 3. Attributs catégorie
+    // Attributs catégorie
     if (Object.keys(catFields).length > 0) {
       try {
         await sb.from('listing_attributes').upsert({ listing_id: listing.id, attributes: catFields });
-      } catch(e) { console.warn('listing_attributes:', e.message); }
+      } catch(e) { /* table optionnelle */ }
     }
 
-    // 4. Reset formulaire
+    // Reset formulaire
     selectedPhotos = [];
     selectedCategorySlug = null;
     selectedCategoryId = null;
-    selectedBoosts = new Set();
+    if (typeof selectedBoosts !== 'undefined') selectedBoosts = new Set();
     const photoGrid = document.getElementById('photoPreviewGrid');
     if (photoGrid) photoGrid.innerHTML = '';
     const dropZone = document.getElementById('photoDropZone');
@@ -2481,82 +2484,63 @@ async function doPostListing() {
     goToPostStep(1);
     closeModal('postModal');
 
-    // 5. Page de confirmation 🎉
-    showConfirmationPage(listing, title, price, city);
-    await loadHomeListings();
+    // Page de confirmation
+    showPublishSuccess(listing, title, price, city);
+    loadHomeListings();
 
   } catch(e) {
-    errEl.textContent = 'Erreur : ' + e.message;
+    document.getElementById('postError').textContent = 'Erreur : ' + e.message;
     btn.disabled = false;
     btn.textContent = '🚀 Publier gratuitement';
   }
 }
 
-function showConfirmationPage(listing, title, price, city) {
-  // Créer une overlay de confirmation
-  let conf = document.getElementById('confirmationOverlay');
-  if (!conf) {
-    conf = document.createElement('div');
-    conf.id = 'confirmationOverlay';
-    conf.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,.95);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .3s ease';
-    document.body.appendChild(conf);
-    const style = document.createElement('style');
-    style.textContent = '@keyframes fadeIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}@keyframes confettiDrop{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}';
-    document.head.appendChild(style);
+function showPublishSuccess(listing, title, price, city) {
+  let el = document.getElementById('publishSuccess');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'publishSuccess';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,.96);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px';
+    document.body.appendChild(el);
   }
-
-  conf.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:40px 32px;max-width:440px;width:100%;text-align:center;position:relative;overflow:hidden">
-      <!-- Confettis -->
-      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
-        ${Array.from({length:12},(_,i)=>`<div style="position:absolute;width:8px;height:8px;border-radius:${i%2?'50%':'2px'};background:${['#e8ff47','#fff','#ff6b35','#4ade80'][i%4]};left:${8+i*7}%;animation:confettiDrop ${1.5+i*.2}s ease-in ${i*.1}s forwards"></div>`).join('')}
-      </div>
-
-      <!-- Icône succès -->
-      <div style="width:80px;height:80px;background:rgba(232,255,71,.15);border:2px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto 20px">
-        🎉
-      </div>
-
-      <h2 style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.6rem;margin-bottom:8px;letter-spacing:-.5px">Annonce publiée !</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin-bottom:24px;line-height:1.6">
-        Merci ${sanitize(currentProfile?.full_name?.split(' ')[0] || '')} ! Ton annonce est maintenant visible par tous les utilisateurs de Nidus.
+  el.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:36px 28px;max-width:400px;width:100%;text-align:center">
+      <div style="font-size:3.5rem;margin-bottom:16px">🎉</div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.5rem;margin-bottom:10px;letter-spacing:-.5px">Annonce publiée !</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:20px;line-height:1.6">
+        Merci ${sanitize(currentProfile?.full_name?.split(' ')[0] || '')} ! Ton annonce est maintenant visible sur Nidus.
       </p>
-
-      <!-- Récap annonce -->
       <div style="background:var(--surface2);border-radius:14px;padding:16px;margin-bottom:24px;text-align:left">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;margin-bottom:4px">${sanitize(title)}</div>
-        <div style="color:var(--accent);font-family:'Syne',sans-serif;font-weight:900;font-size:1.3rem;margin-bottom:6px">${formatPrice(price)}</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${sanitize(title)}</div>
+        <div style="color:var(--accent);font-family:'Syne',sans-serif;font-weight:900;font-size:1.2rem;margin-bottom:4px">${formatPrice(price)}</div>
         <div style="color:var(--muted);font-size:.8rem">📍 ${sanitize(city)}</div>
       </div>
-
-      <!-- Actions -->
-      <div style="display:flex;gap:10px;flex-direction:column">
-        <button onclick="viewMyListing('${listing.id}')" class="btn btn-primary" style="width:100%;padding:13px;font-size:.95rem">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="viewPublishedListing('${listing.id}')" class="btn btn-primary" style="width:100%;padding:13px;font-size:.9rem">
           👁️ Voir mon annonce
         </button>
-        <button onclick="closeConfirmation()" class="btn btn-ghost" style="width:100%;padding:11px">
+        <button onclick="closePublishSuccess()" class="btn btn-ghost" style="width:100%;padding:11px">
           Retour à l'accueil
         </button>
-        <button onclick="closeConfirmation();openPostModal()" style="background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;padding:4px">
-          + Déposer une autre annonce
+        <button onclick="closePublishSuccess();setTimeout(openPostModal,300)" style="background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;padding:4px;margin-top:4px">
+          + Publier une autre annonce
         </button>
       </div>
     </div>`;
-  conf.style.display = 'flex';
+  el.style.display = 'flex';
 }
 
-function closeConfirmation() {
-  const conf = document.getElementById('confirmationOverlay');
-  if (conf) conf.style.display = 'none';
+function closePublishSuccess() {
+  const el = document.getElementById('publishSuccess');
+  if (el) el.style.display = 'none';
   showPage('home');
 }
 
-async function viewMyListing(id) {
-  const conf = document.getElementById('confirmationOverlay');
-  if (conf) conf.style.display = 'none';
+async function viewPublishedListing(id) {
+  const el = document.getElementById('publishSuccess');
+  if (el) el.style.display = 'none';
   await openListing(id);
 }
-
 
 
 function filterCategory(catId) {
@@ -2892,7 +2876,7 @@ async function loadProfilePage() {
 }
 
 async function loadMyListings() {
-  const { data } = await sb.from('listings').select('*, categories(name,icon)').eq('user_id', currentUser.id).neq('status','deleted').order('created_at', { ascending: false });
+  const { data } = await sb.from('listings').select('*, categories(name,icon)').eq('user_id', currentUser.id).order('created_at', { ascending: false });
   const grid = document.getElementById('myListingsGrid');
   if (!data || data.length === 0) {
     grid.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><h3>Aucune annonce</h3><button class="btn btn-primary" onclick="openPostModal()" style="margin-top:12px">Déposer ma première annonce</button></div>`;
