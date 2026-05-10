@@ -125,6 +125,9 @@
 
     @media(max-width:768px){
       .page.active{padding-bottom:20px}
+      .listing-detail{padding-top:64px}
+      [style*="padding-top:80px"]{padding-top:64px!important}
+      [style*="padding-top:88px"]{padding-top:64px!important}
     }
     body.posting-mode .nav-links,
     body.posting-mode .bottom-nav,
@@ -396,6 +399,12 @@
     .map-tooltip{position:fixed;background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:6px 12px;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;color:var(--text);pointer-events:none;z-index:999;opacity:0;transition:opacity .1s;white-space:nowrap}
     .map-tooltip.show{opacity:1}
 
+  
+    /* MOBILE NAV */
+    @media(max-width:768px){
+      #mobileNav{display:flex!important}
+      .page.active{padding-bottom:75px}
+    }
   </style>
 </head>
 <body>
@@ -420,6 +429,26 @@
     <button class="btn btn-primary" onclick="openPostModal()">+ Déposer</button>
   </div>
 </nav>
+
+<!-- BARRE NAVIGATION MOBILE -->
+<div id="mobileNav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:rgba(10,10,10,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom));justify-content:space-around;align-items:center">
+  <button onclick="showPage('home');setMobileNav('home')" id="mn-home" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);cursor:pointer;padding:6px 12px;font-family:'Inter',sans-serif;font-size:.62rem;font-weight:600;min-width:56px;transition:color .2s">
+    <span style="font-size:1.2rem">🏠</span>Accueil
+  </button>
+  <button onclick="filterCategory(null);setMobileNav('annonces')" id="mn-annonces" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);cursor:pointer;padding:6px 12px;font-family:'Inter',sans-serif;font-size:.62rem;font-weight:600;min-width:56px;transition:color .2s">
+    <span style="font-size:1.2rem">🔍</span>Annonces
+  </button>
+  <button onclick="openPostModal()" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:6px 4px;min-width:56px">
+    <span style="background:var(--accent);color:#0a0a0a;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;margin-bottom:1px">+</span>
+    <span style="font-family:'Inter',sans-serif;font-size:.62rem;font-weight:600;color:var(--accent)">Publier</span>
+  </button>
+  <button onclick="showPage('messages');setMobileNav('messages')" id="mn-messages" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);cursor:pointer;padding:6px 12px;font-family:'Inter',sans-serif;font-size:.62rem;font-weight:600;min-width:56px;transition:color .2s">
+    <span style="font-size:1.2rem">💬</span>Messages
+  </button>
+  <button onclick="goToAccount();setMobileNav('compte')" id="mn-compte" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);cursor:pointer;padding:6px 12px;font-family:'Inter',sans-serif;font-size:.62rem;font-weight:600;min-width:56px;transition:color .2s">
+    <span style="font-size:1.2rem">👤</span>Compte
+  </button>
+</div>
 
 <!-- ================================ PAGE HOME ================================ -->
 <div class="page active" id="page-home">
@@ -1198,6 +1227,11 @@ async function init() {
   try { animateStats(); } catch(e) {}
   try { setupReveal(); } catch(e) {}
   sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      // L'utilisateur a cliqué sur le lien de reset - afficher le formulaire
+      showResetPasswordForm();
+      return;
+    }
     if (event === 'SIGNED_IN') {
       currentUser = session.user;
       await loadProfile();
@@ -1293,8 +1327,7 @@ async function doLogin() {
     if (error) {
       errEl.textContent = 'Email ou mot de passe incorrect';
     } else {
-      if (!stayLoggedIn) sessionStorage.setItem('nidus_no_persist', '1');
-      else sessionStorage.removeItem('nidus_no_persist');
+      // Session toujours persistante
     }
   } catch(e) {
     errEl.textContent = 'Erreur réseau, réessaie';
@@ -3845,17 +3878,97 @@ async function openSellerProfile(userId) {
 }
 
 // Mot de passe oublié
-async function doResetPassword() {
-  const email = document.getElementById('loginEmail')?.value.trim();
-  if (!email) {
-    showToast('Entre ton email avant', 'error');
-    return;
+async function showResetPasswordForm() {
+  let el = document.getElementById('resetPasswordOverlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'resetPasswordOverlay';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,.97);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
+    document.body.appendChild(el);
   }
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + window.location.pathname
-  });
-  if (error) showToast('Erreur : ' + error.message, 'error');
-  else showToast('📧 Email de réinitialisation envoyé !');
+  el.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:36px 28px;max-width:400px;width:100%;text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:16px">🔑</div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.4rem;margin-bottom:8px">Nouveau mot de passe</h2>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:24px">Choisis un nouveau mot de passe pour ton compte.</p>
+      <div class="form-group" style="text-align:left">
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="newPassword1" placeholder="Min. 8 caractères" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;margin-top:6px"/>
+      </div>
+      <div class="form-group" style="text-align:left;margin-top:12px">
+        <label>Confirmer le mot de passe</label>
+        <input type="password" id="newPassword2" placeholder="Répète ton mot de passe" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;margin-top:6px"/>
+      </div>
+      <div id="resetPwError" style="color:var(--error);font-size:.8rem;margin:8px 0"></div>
+      <button onclick="doUpdatePassword()" class="btn btn-primary" style="width:100%;padding:14px;margin-top:16px;font-size:.95rem">
+        Enregistrer le nouveau mot de passe
+      </button>
+    </div>`;
+  el.style.display = 'flex';
+}
+
+async function doUpdatePassword() {
+  const p1 = document.getElementById('newPassword1').value;
+  const p2 = document.getElementById('newPassword2').value;
+  const errEl = document.getElementById('resetPwError');
+
+  if (!p1 || p1.length < 8) { errEl.textContent = 'Min. 8 caractères'; return; }
+  if (p1 !== p2) { errEl.textContent = 'Les mots de passe ne correspondent pas'; return; }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement...';
+
+  const { error } = await sb.auth.updateUser({ password: p1 });
+
+  if (error) {
+    errEl.textContent = 'Erreur : ' + error.message;
+    btn.disabled = false;
+    btn.textContent = 'Enregistrer le nouveau mot de passe';
+  } else {
+    document.getElementById('resetPasswordOverlay').style.display = 'none';
+    showToast('✅ Mot de passe mis à jour !');
+    showPage('home');
+  }
+}
+
+async function doResetPassword() {
+  const emailEl = document.getElementById('loginEmail');
+  const email = emailEl?.value.trim();
+  if (!email) {
+    // Demander l'email si pas rempli
+    const input = prompt('Entre ton adresse email :');
+    if (!input) return;
+    if (emailEl) emailEl.value = input;
+  }
+  const finalEmail = document.getElementById('loginEmail')?.value.trim() || email;
+  if (!finalEmail) { showToast('Email requis', 'error'); return; }
+  
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(finalEmail, {
+      redirectTo: window.location.href
+    });
+    if (error) throw error;
+    showToast('📧 Email envoyé ! Vérifie tes spams aussi.', 'success');
+    // Fermer la modal et afficher message
+    closeModal('authModal');
+    // Afficher un message visible
+    let msg = document.getElementById('resetMsg');
+    if (!msg) {
+      msg = document.createElement('div');
+      msg.id = 'resetMsg';
+      msg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:20px 28px;z-index:900;text-align:center;max-width:340px;width:90%';
+      document.body.appendChild(msg);
+    }
+    msg.innerHTML = `
+      <div style="font-size:2rem;margin-bottom:8px">📧</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;margin-bottom:6px">Email envoyé !</div>
+      <div style="color:var(--muted);font-size:.85rem;line-height:1.6">Vérifie ta boîte mail <strong style="color:var(--text)">${finalEmail}</strong> et tes spams.</div>
+      <button onclick="this.parentNode.remove()" style="margin-top:14px;background:var(--accent);color:#0a0a0a;border:none;border-radius:100px;padding:8px 20px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">OK</button>
+    `;
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
 }
 
 // Pagination
@@ -4663,6 +4776,20 @@ function triggerListingsSearch(val) {
       document.getElementById('listingsPageTitle').textContent = 'Toutes les annonces';
     }
   }, 300);
+}
+
+
+function setMobileNav(id) {
+  document.querySelectorAll('#mobileNav button').forEach(b => {
+    b.style.color = 'var(--muted)';
+  });
+  const el = document.getElementById('mn-' + id);
+  if (el) el.style.color = 'var(--accent)';
+}
+
+function goToAccount() {
+  if (!currentUser) { openModal('authModal'); return; }
+  showPage('profile');
 }
 
 loadFranceMap();
