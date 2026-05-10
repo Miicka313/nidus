@@ -2821,7 +2821,7 @@ async function loadProfilePage() {
 }
 
 async function loadMyListings() {
-  const { data } = await sb.from('listings').select('*, categories(name,icon)').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+  const { data } = await sb.from('listings').select('*, categories(name,icon)').eq('user_id', currentUser.id).neq('status','deleted').order('created_at', { ascending: false });
   const grid = document.getElementById('myListingsGrid');
   if (!data || data.length === 0) {
     grid.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><h3>Aucune annonce</h3><button class="btn btn-primary" onclick="openPostModal()" style="margin-top:12px">Déposer ma première annonce</button></div>`;
