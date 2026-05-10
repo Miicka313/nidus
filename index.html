@@ -1228,8 +1228,11 @@ async function init() {
   try { setupReveal(); } catch(e) {}
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
-      // L'utilisateur a cliqué sur le lien de reset - afficher le formulaire
-      showResetPasswordForm();
+      // Déconnecter toute session existante puis afficher le formulaire
+      currentUser = null;
+      currentProfile = null;
+      updateNav();
+      setTimeout(() => showResetPasswordForm(), 300);
       return;
     }
     if (event === 'SIGNED_IN') {
@@ -3879,11 +3882,15 @@ async function openSellerProfile(userId) {
 
 // Mot de passe oublié
 async function showResetPasswordForm() {
+  // Fermer tous les modals ouverts
+  document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+  document.body.style.overflow = 'hidden';
+  
   let el = document.getElementById('resetPasswordOverlay');
   if (!el) {
     el = document.createElement('div');
     el.id = 'resetPasswordOverlay';
-    el.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,.97);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,.98);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     document.body.appendChild(el);
   }
   el.innerHTML = `
@@ -3900,7 +3907,7 @@ async function showResetPasswordForm() {
         <input type="password" id="newPassword2" placeholder="Répète ton mot de passe" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;margin-top:6px"/>
       </div>
       <div id="resetPwError" style="color:var(--error);font-size:.8rem;margin:8px 0"></div>
-      <button onclick="doUpdatePassword()" class="btn btn-primary" style="width:100%;padding:14px;margin-top:16px;font-size:.95rem">
+      <button id="resetPwBtn" onclick="doUpdatePassword()" class="btn btn-primary" style="width:100%;padding:14px;margin-top:16px;font-size:.95rem">
         Enregistrer le nouveau mot de passe
       </button>
     </div>`;
@@ -3915,16 +3922,14 @@ async function doUpdatePassword() {
   if (!p1 || p1.length < 8) { errEl.textContent = 'Min. 8 caractères'; return; }
   if (p1 !== p2) { errEl.textContent = 'Les mots de passe ne correspondent pas'; return; }
 
-  const btn = event.target;
-  btn.disabled = true;
-  btn.textContent = 'Enregistrement...';
+  const btn = document.getElementById('resetPwBtn');
+  if(btn) { btn.disabled = true; btn.textContent = 'Enregistrement...'; }
 
   const { error } = await sb.auth.updateUser({ password: p1 });
 
   if (error) {
     errEl.textContent = 'Erreur : ' + error.message;
-    btn.disabled = false;
-    btn.textContent = 'Enregistrer le nouveau mot de passe';
+    if(btn) { btn.disabled = false; btn.textContent = 'Enregistrer le nouveau mot de passe'; }
   } else {
     document.getElementById('resetPasswordOverlay').style.display = 'none';
     showToast('✅ Mot de passe mis à jour !');
@@ -4339,14 +4344,23 @@ function getBoostRecapHtml() {
 
 // Vérifier retour Stripe
 function checkStripeReturn() {
+  // NE PAS toucher au hash - Supabase JS le lit automatiquement via onAuthStateChange
+  // Vérifier uniquement les query params pour Stripe
   const params = new URLSearchParams(window.location.search);
+  const type = params.get('type');
+  if (type === 'recovery') {
+    // Cas où le token est en query param
+    showResetPasswordForm();
+    window.history.replaceState({}, '', window.location.pathname);
+    return;
+  }
+
   const payment = params.get('payment');
   const plan = params.get('plan');
   if (payment === 'success') {
     if (plan === 'premium') showToast('🎉 Bienvenue sur Nidus Premium !');
     else if (plan === 'pro') showToast('🏢 Bienvenue sur Nidus Pro !');
     else showToast('✅ Paiement réussi !');
-    // Nettoyer URL
     window.history.replaceState({}, '', window.location.pathname);
   } else if (payment === 'boost_success') {
     showToast('🚀 Boost activé sur ton annonce !');
